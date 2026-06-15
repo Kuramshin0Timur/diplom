@@ -1,0 +1,1348 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Antarctic Mapper | Геопривязка растровых изображений</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --bg: #02152b;
+        --panel: rgba(7, 31, 60, 0.92);
+        --panel2: #09284d;
+        --border: rgba(80, 140, 220, 0.35);
+        --text: #ffffff;
+        --muted: #9cb5d8;
+        --blue: #2d7eff;
+        --cyan: #4cc9ff;
+        --green: #21d07a;
+        --shadow: 0 0 30px rgba(0, 0, 0, 0.45);
+        --error: #ff4d5a;
+        --warning: #ffbe2f;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: radial-gradient(
+          circle at top,
+          #083b6d 0%,
+          #041d38 30%,
+          #02152b 70%
+        );
+        min-height: 100vh;
+        color: var(--text);
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        background-size: 60px 60px;
+        pointer-events: none;
+        opacity: 0.3;
+      }
+
+      .wrapper {
+        width: 100%;
+        padding: 18px;
+        position: relative;
+        z-index: 1;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 18px;
+      }
+
+      .header h1 {
+        font-size: 72px;
+        font-weight: 800;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        line-height: 1;
+        color: white;
+        text-shadow:
+          0 0 10px rgba(255, 255, 255, 0.2),
+          0 0 40px rgba(0, 140, 255, 0.4);
+      }
+
+      .header p {
+        margin-top: 12px;
+        color: #73b6ff;
+        font-size: 20px;
+        font-weight: 500;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 290px 1fr 280px;
+        gap: 16px;
+      }
+
+      .panel {
+        background: linear-gradient(
+          180deg,
+          rgba(12, 42, 80, 0.92),
+          rgba(6, 26, 50, 0.96)
+        );
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        backdrop-filter: blur(12px);
+        box-shadow:
+          inset 0 0 0 1px rgba(255, 255, 255, 0.02),
+          0 10px 40px rgba(0, 0, 0, 0.4);
+      }
+
+      .sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .panel-title {
+        padding: 18px 20px 14px;
+        font-size: 15px;
+        font-weight: 700;
+        text-transform: uppercase;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .features {
+        padding: 18px;
+      }
+
+      .feature {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        margin-bottom: 18px;
+      }
+
+      .feature:last-child {
+        margin-bottom: 0;
+      }
+
+      .feature-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        background: linear-gradient(180deg, #0f4d90, #0b3767);
+        border: 1px solid rgba(120, 180, 255, 0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+        box-shadow: 0 0 20px rgba(0, 140, 255, 0.18);
+      }
+
+      .feature-text {
+        color: #dcecff;
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .process {
+        padding: 18px 22px 22px;
+      }
+
+      .step {
+        position: relative;
+        padding-left: 32px;
+        margin-bottom: 18px;
+      }
+
+      .step:last-child {
+        margin-bottom: 0;
+      }
+
+      .step::before {
+        content: "";
+        position: absolute;
+        left: 8px;
+        top: 8px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #1f7fff;
+        box-shadow: 0 0 12px #1f7fff;
+      }
+
+      .step::after {
+        content: "";
+        position: absolute;
+        left: 13px;
+        top: 20px;
+        width: 2px;
+        height: calc(100% + 8px);
+        background: rgba(80, 160, 255, 0.3);
+      }
+
+      .step:last-child::after {
+        display: none;
+      }
+
+      .step-title {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 5px;
+      }
+
+      .step-sub {
+        color: #9eb3d0;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      /* Center Panel */
+      .center {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 19px;
+        font-weight: 700;
+      }
+
+      .logo {
+        width: 52px;
+        height: 38px;
+        background: linear-gradient(180deg, #5caeff, #0b4fa3);
+        clip-path: polygon(
+          0 100%,
+          15% 60%,
+          30% 72%,
+          55% 30%,
+          80% 62%,
+          100% 42%,
+          100% 100%
+        );
+        box-shadow: 0 0 25px rgba(55, 150, 255, 0.5);
+      }
+
+      .tabs {
+        display: flex;
+        gap: 28px;
+        align-items: center;
+      }
+
+      .tab {
+        color: #b7c9e8;
+        font-size: 14px;
+        cursor: pointer;
+        transition: 0.25s;
+        padding: 5px 0;
+      }
+
+      .tab:hover {
+        color: white;
+      }
+
+      .tab.active {
+        color: white;
+        font-weight: 600;
+        border-bottom: 2px solid #2d7eff;
+      }
+
+      .done {
+        padding: 8px 18px;
+        border-radius: 10px;
+        background: rgba(30, 210, 120, 0.18);
+        border: 1px solid rgba(30, 210, 120, 0.35);
+        color: #66ffaf;
+        font-weight: 600;
+        font-size: 13px;
+      }
+
+      /* Map Container */
+      .map-panel {
+        padding: 0 0 14px;
+      }
+
+      .map-wrapper {
+        position: relative;
+        margin: 0 16px 16px;
+        border-radius: 14px;
+        overflow: hidden;
+        border: 1px solid rgba(130, 180, 255, 0.15);
+        height: 600px;
+        background: radial-gradient(circle at center, #083d75 0%, #041d3d 70%);
+      }
+
+      #antarctic-map {
+        height: 100%;
+        width: 100%;
+        background: radial-gradient(circle at center, #083d75 0%, #041d3d 70%);
+      }
+
+      /* Map Controls Overlay */
+      .map-controls-overlay {
+        position: absolute;
+        left: 16px;
+        top: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        z-index: 1000;
+      }
+
+      .map-controls-overlay button {
+        width: 44px;
+        height: 44px;
+        border: none;
+        border-radius: 8px;
+        background: white;
+        color: #222;
+        font-size: 26px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        transition: 0.2s;
+      }
+
+      .map-controls-overlay button:hover {
+        transform: scale(1.05);
+        background: #f0f0f0;
+      }
+
+      .layers-btn {
+        position: absolute;
+        right: 16px;
+        top: 20px;
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
+        background: white;
+        color: #222;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        cursor: pointer;
+        z-index: 1000;
+        transition: 0.2s;
+      }
+
+      .layers-btn:hover {
+        transform: scale(1.05);
+      }
+
+      .scale {
+        position: absolute;
+        left: 18px;
+        bottom: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        padding: 8px 12px;
+        font-size: 13px;
+        border-radius: 6px;
+        background: rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        font-weight: 500;
+      }
+
+      .epsg {
+        position: absolute;
+        right: 18px;
+        bottom: 18px;
+        padding: 12px 16px;
+        background: rgba(0, 0, 0, 0.42);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        line-height: 1.7;
+        font-size: 12px;
+        backdrop-filter: blur(8px);
+        z-index: 1000;
+        font-family: monospace;
+      }
+
+      /* Bottom Grid */
+      .bottom-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr 0.9fr;
+        gap: 16px;
+      }
+
+      .table-panel {
+        padding: 18px;
+      }
+
+      .table-title {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 16px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th {
+        font-size: 11px;
+        color: #b9d5ff;
+        padding: 10px 8px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      td {
+        padding: 10px 8px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        font-size: 12px;
+        text-align: center;
+      }
+
+      .num {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .num.red {
+        background: #ff4d5a;
+      }
+      .num.green {
+        background: #1ecb7f;
+      }
+      .num.blue {
+        background: #347eff;
+      }
+      .num.yellow {
+        background: #ffbe2f;
+        color: #222;
+      }
+
+      .result {
+        padding: 18px;
+      }
+
+      .result-box {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        margin-bottom: 18px;
+      }
+
+      .check {
+        width: 54px;
+        height: 54px;
+        border-radius: 50%;
+        background: rgba(30, 210, 120, 0.15);
+        border: 1px solid rgba(30, 210, 120, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 30px;
+        color: #42ff9f;
+      }
+
+      .success {
+        font-size: 17px;
+        color: #57ffac;
+        font-weight: 700;
+        line-height: 1.4;
+      }
+
+      .result-line {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        font-size: 13px;
+      }
+
+      .result-line span:last-child {
+        color: white;
+        font-weight: 600;
+      }
+
+      .tiles {
+        padding: 18px;
+      }
+
+      .tiles-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .tile {
+        height: 70px;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: linear-gradient(135deg, #0f2d4f, #0a1e38);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        color: #9cb5d8;
+      }
+
+      .tile.loaded {
+        background-size: cover;
+        background-position: center;
+        position: relative;
+      }
+
+      .tile.loaded::after {
+        content: "✓";
+        position: absolute;
+        bottom: 4px;
+        right: 6px;
+        color: #21d07a;
+        font-size: 10px;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 2px 4px;
+        border-radius: 4px;
+      }
+
+      .tiles-bottom {
+        display: flex;
+        justify-content: space-between;
+        color: #c7dbf7;
+        font-size: 13px;
+      }
+
+      /* Right Sidebar */
+      .rightbar {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .layers {
+        padding: 18px;
+      }
+
+      .layer {
+        margin-bottom: 26px;
+      }
+
+      .layer:last-child {
+        margin-bottom: 0;
+      }
+
+      .layer-top {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        font-size: 14px;
+      }
+
+      .slider {
+        width: 100%;
+        appearance: none;
+        height: 6px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.12);
+      }
+
+      .slider::-webkit-slider-thumb {
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #66b3ff;
+        cursor: pointer;
+        box-shadow: 0 0 12px rgba(80, 180, 255, 0.8);
+      }
+
+      .checks {
+        margin-top: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .check-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+
+      .check-item input {
+        width: 18px;
+        height: 18px;
+        accent-color: #5ea8ff;
+        cursor: pointer;
+      }
+
+      .info {
+        padding: 18px;
+      }
+
+      .info-grid {
+        display: grid;
+        grid-template-columns: 110px 1fr;
+        gap: 14px 12px;
+        margin-top: 8px;
+      }
+
+      .info-label {
+        color: #d7e7ff;
+        font-size: 12px;
+      }
+
+      .info-value {
+        color: white;
+        font-weight: 500;
+        font-size: 12px;
+      }
+
+      /* Loading Spinner */
+      .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: #2d7eff;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Toast Notifications */
+      .toast {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.9);
+        backdrop-filter: blur(8px);
+        padding: 12px 24px;
+        border-radius: 40px;
+        color: white;
+        font-size: 14px;
+        z-index: 2000;
+        animation: fadeInUp 0.3s ease;
+        border: 1px solid rgba(80, 180, 255, 0.3);
+      }
+
+      .toast.success {
+        border-left: 3px solid #21d07a;
+      }
+      .toast.error {
+        border-left: 3px solid #ff4d5a;
+      }
+      .toast.info {
+        border-left: 3px solid #2d7eff;
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateX(-50%) translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
+      }
+
+      /* Modal */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 2000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(5px);
+      }
+
+      .modal-content {
+        background: linear-gradient(
+          180deg,
+          rgba(12, 42, 80, 0.98),
+          rgba(6, 26, 50, 0.98)
+        );
+        margin: 5% auto;
+        padding: 25px;
+        width: 90%;
+        max-width: 550px;
+        border-radius: 20px;
+        border: 1px solid rgba(80, 140, 220, 0.3);
+        color: white;
+      }
+
+      .modal-content h2 {
+        margin-bottom: 20px;
+        font-size: 24px;
+      }
+
+      .modal-content input,
+      .modal-content select,
+      .modal-content textarea {
+        width: 100%;
+        padding: 12px;
+        margin: 10px 0;
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        color: white;
+        font-size: 14px;
+      }
+
+      .modal-content input:focus,
+      .modal-content select:focus,
+      .modal-content textarea:focus {
+        outline: none;
+        border-color: #2d7eff;
+      }
+
+      .close {
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        color: #9cb5d8;
+      }
+
+      .close:hover {
+        color: white;
+      }
+
+      .btn-primary {
+        background: linear-gradient(180deg, #2d7eff, #1a5bc4);
+        border: none;
+        padding: 12px 24px;
+        border-radius: 10px;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+        font-size: 14px;
+        transition: 0.2s;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(45, 126, 255, 0.3);
+      }
+
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 12px 24px;
+        border-radius: 10px;
+        color: white;
+        cursor: pointer;
+        width: 100%;
+        margin-top: 10px;
+      }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: rgba(80, 140, 220, 0.5);
+        border-radius: 3px;
+      }
+
+      /* Responsive */
+      @media (max-width: 1500px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        .bottom-grid {
+          grid-template-columns: 1fr;
+        }
+        .header h1 {
+          font-size: 48px;
+        }
+        .header p {
+          font-size: 16px;
+        }
+      }
+
+      /* Data Table Styles for Coordinates */
+      .data-table-container {
+        padding: 18px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .filter-bar {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .filter-bar button {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        padding: 8px 16px;
+        border-radius: 8px;
+        color: white;
+        cursor: pointer;
+        font-size: 12px;
+        transition: 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .filter-bar button:hover {
+        background: rgba(45, 126, 255, 0.2);
+      }
+
+      .search-box {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 8px 12px;
+        border-radius: 8px;
+        color: white;
+        flex: 1;
+        min-width: 200px;
+      }
+
+      .search-box::placeholder {
+        color: #9cb5d8;
+      }
+
+      .data-table-wrapper {
+        flex: 1;
+        overflow-x: auto;
+        overflow-y: auto;
+        max-height: 450px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+
+      .data-table th {
+        position: sticky;
+        top: 0;
+        background: #0a1e38;
+        padding: 12px 10px;
+        font-weight: 600;
+        color: #b9d5ff;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .data-table td {
+        padding: 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        color: #dcecff;
+      }
+
+      .data-table tr:hover {
+        background: rgba(45, 126, 255, 0.1);
+        cursor: pointer;
+      }
+
+      .badge-coordinate {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 600;
+        background: rgba(33, 208, 122, 0.2);
+        color: #21d07a;
+        border: 1px solid rgba(33, 208, 122, 0.3);
+      }
+
+      .stats-bar {
+        margin-top: 15px;
+        padding: 12px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        color: #9cb5d8;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .stats-bar span {
+        color: white;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrapper">
+      <div class="header"></div>
+
+      <div class="layout">
+        <!-- LEFT PANEL -->
+        <div class="sidebar">
+
+
+          <div class="panel">
+            <div class="panel-title">ПРОЦЕСС ОБРАБОТКИ</div>
+            <div class="process">
+              <div class="step">
+                <div class="step-title">1. Загрузка изображения</div>
+                <div class="step-sub" id="step1-sub">ожидание...</div>
+              </div>
+              <div class="step">
+                <div class="step-title">2. Задание GCP</div>
+                <div class="step-sub" id="step2-sub">4 контрольные точки</div>
+              </div>
+              <div class="step">
+                <div class="step-title">3. Расчёт преобразования</div>
+                <div class="step-sub">Метод наименьших квадратов</div>
+              </div>
+              <div class="step">
+                <div class="step-title">4. Репроекция</div>
+                <div class="step-sub">
+                  EPSG:3031 (Antarctic Polar Stereographic)
+                </div>
+              </div>
+              <div class="step">
+                <div class="step-title">5. Генерация тайлов</div>
+                <div class="step-sub" id="step5-sub">ожидание...</div>
+              </div>
+              <div class="step">
+                <div class="step-title">6. Отображение на карте</div>
+                <div class="step-sub">Интерактивный просмотр</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Library Panel -->
+          <div class="panel" id="libraryPanel">
+            <div class="panel-title">
+              <i class="fas fa-database"></i> БИБЛИОТЕКА КАРТ
+            </div>
+            <div class="features" style="padding-top: 0">
+              <div style="display: flex; gap: 8px; margin-bottom: 15px">
+                <button
+                  id="refreshLibraryBtn"
+                  class="timeline-btn"
+                  style="flex: 1"
+                >
+                  <i class="fas fa-sync-alt"></i> Обновить
+                </button>
+                <button
+                  id="addMapBtn"
+                  class="timeline-btn"
+                  style="flex: 1; background: #2d7eff"
+                >
+                  <i class="fas fa-plus"></i> Добавить
+                </button>
+                <button
+                  id="batchProcessBtn"
+                  class="timeline-btn"
+                  style="flex: 1"
+                >
+                  <i class="fas fa-play"></i> Пакетная
+                </button>
+              </div>
+              <div
+                id="libraryGrid"
+                style="max-height: 250px; overflow-y: auto"
+              ></div>
+              <div
+                style="
+                  display: flex;
+                  gap: 12px;
+                  margin-top: 12px;
+                  font-size: 11px;
+                  color: #9cb5d8;
+                "
+              >
+                <span
+                  ><i class="fas fa-layer-group"></i> Всего:
+                  <span id="totalMapsCount">0</span></span
+                >
+                <span
+                  ><i class="fas fa-check-circle" style="color: #21d07a"></i>
+                  Готово: <span id="processedMapsCount">0</span></span
+                >
+                <span
+                  ><i class="fas fa-clock" style="color: #ffbe2f"></i> В
+                  ожидании: <span id="pendingMapsCount">0</span></span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CENTER PANEL -->
+        <div class="center">
+          <div class="panel map-panel">
+            <div class="topbar">
+              <div class="brand">
+                <div class="logo"></div>
+                Antarctic Mapper
+              </div>
+              <div class="tabs">
+                <div class="tab active" data-tab="map">Карта</div>
+                <div class="tab" data-tab="upload">Загрузка</div>
+                <div class="tab" data-tab="gcps">GCP</div>
+                <div class="tab" data-tab="process">Обработка</div>
+                <div class="tab" data-tab="tiles">Тайлы</div>
+                <div class="tab" data-tab="coordinates">📍 Координаты</div>
+              </div>
+              <div class="done" id="statusBadge">
+                <i class="fas fa-check-circle"></i> Готово
+              </div>
+            </div>
+
+            <div class="map-wrapper" id="mapWrapper">
+              <div id="antarctic-map"></div>
+              <div class="map-controls-overlay">
+                <button id="zoomInBtn">+</button>
+                <button id="zoomOutBtn">−</button>
+                <button id="resetViewBtn" style="font-size: 20px">⌂</button>
+              </div>
+              <div class="layers-btn" id="layersToggleBtn">☰</div>
+              <div class="scale" id="scaleDisplay">500 KM</div>
+              <div class="epsg" id="coordDisplay">
+                EPSG:3031<br />X: 0.00<br />Y: 0.00
+              </div>
+            </div>
+
+            <!-- Coordinates Panel -->
+            <div id="coordinatesPanel" style="display: none; height: 600px; overflow: hidden;">
+              <div class="data-table-container">
+                <div class="filter-bar">
+                  <input type="text" id="coordSearchInput" class="search-box" placeholder="🔍 Поиск по названию, координатам...">
+                  <button id="exportCoordsBtn">
+                    <i class="fas fa-download"></i> Экспорт CSV
+                  </button>
+                  <button id="refreshCoordsBtn">
+                    <i class="fas fa-sync-alt"></i> Обновить
+                  </button>
+                  <button id="uploadCoordsBtn">
+                    <i class="fas fa-upload"></i> Загрузить CSV
+                  </button>
+                </div>
+
+                <div class="data-table-wrapper">
+                  <table class="data-table" id="coordinatesTable">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Название</th>
+                        <th>Широта</th>
+                        <th>Долгота</th>
+                        <th>Описание</th>
+                        <th><i class="fas fa-map-marker-alt"></i></th>
+                      </tr>
+                    </thead>
+                    <tbody id="coordinatesTableBody">
+                      <tr><td colspan="6" style="text-align: center;">Загрузка данных...</td><tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="stats-bar">
+                  <div>📍 Всего координат: <span id="totalCoordsCount">0</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bottom-grid">
+            <!-- GCP Table -->
+            <div class="panel table-panel">
+              <div class="table-title">КОНТРОЛЬНЫЕ ТОЧКИ (GCP)</div>
+              <table id="gcpsTable">
+                <thead>
+                  <tr>
+                    <th>№</th>
+                    <th>Пиксельные координаты</th>
+                    <th>Географические координаты</th>
+                    <th>Ошибка (м)</th>
+                  </tr>
+                </thead>
+                <tbody id="gcpsTableBody">
+                  <tr>
+                    <td><span class="num red">1</span></td>
+                    <td>(1205, 1150)</span></td>
+                    <td>(-60.0000°, -80.0000°)</span></td>
+                    <td>3.42</span></td>
+                  </tr>
+                  <tr>
+                    <td><span class="num green">2</span></span></td>
+                    <td>(22410, 1180)</span></td>
+                    <td>(-50.0000°, -80.0000°)</span></td>
+                    <td>2.91</span></td>
+                  </tr>
+                  <tr>
+                    <td><span class="num blue">3</span></span></td>
+                    <td>(22450, 22430)</span></td>
+                    <td>(-50.0000°, -85.0000°)</span></td>
+                    <td>3.18</span></td>
+                  </tr>
+                  <tr>
+                    <td><span class="num yellow">4</span></span></td>
+                    <td>(1180, 22390)</span></td>
+                    <td>(-60.0000°, -85.0000°)</span></td>
+                    <td>2.74</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Result Panel -->
+            <div class="panel result">
+              <div class="table-title">РЕЗУЛЬТАТ ГЕОПРИВЯЗКИ</div>
+              <div class="result-box">
+                <div class="check">✓</div>
+                <div class="success">Геопривязка<br />выполнена успешно!</div>
+              </div>
+              <div class="result-line">
+                <span>Средняя ошибка (RMSE):</span
+                ><span id="rmseValue">3.06</span> м
+              </div>
+              <div class="result-line">
+                <span>Максимальная ошибка:</span
+                ><span id="maxErrorValue">3.42</span> м
+              </div>
+              <div class="result-line">
+                <span>Метод:</span><span>Аффинное преобразование</span>
+              </div>
+              <div class="result-line">
+                <span>Количество GCP:</span><span id="gcpsCount">4</span>
+              </div>
+              <div class="result-line">
+                <span>Проекция:</span><span>EPSG:3031</span>
+              </div>
+            </div>
+
+            <!-- Tiles Preview -->
+            <div class="panel tiles">
+              <div class="table-title">ПРЕДПРОСМОТР ТАЙЛОВ</div>
+              <div class="tiles-grid" id="tilesPreview">
+                <div class="tile">🗺️</div>
+                <div class="tile">🗺️</div>
+                <div class="tile">🗺️</div>
+                <div class="tile">🗺️</div>
+                <div class="tile">🗺️</div>
+                <div class="tile">🗺️</div>
+                <div class="tile">🗺️</div>
+                <div class="tile">🗺️</div>
+              </div>
+              <div class="tiles-bottom">
+                <span
+                  >Уровень масштабирования:
+                  <span id="zoomLevelDisplay">6</span></span
+                ><span
+                  >Всего тайлов: <span id="totalTilesDisplay">0</span></span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT PANEL -->
+        <div class="rightbar">
+          <div class="panel">
+            <div class="panel-title">СЛОИ КАРТ</div>
+            <div class="layers">
+              <div class="layer">
+                <div class="layer-top">
+                  <span>Базовая карта</span
+                  ><span id="baseOpacityLabel">100%</span>
+                </div>
+                <input
+                  class="slider"
+                  type="range"
+                  id="baseOpacity"
+                  min="0"
+                  max="100"
+                  value="100"
+                />
+              </div>
+
+              <div id="overlayLayersContainer"></div>
+
+              <div style="margin-top: 15px">
+                <button
+                  id="addOverlayBtn"
+                  class="timeline-btn"
+                  style="width: 100%; background: #2d7eff"
+                >
+                  <i class="fas fa-plus"></i> Добавить карту для наложения
+                </button>
+              </div>
+
+              <div class="checks" style="margin-top: 15px">
+                <label class="check-item"
+                  ><input type="checkbox" id="toggleGridCheck" checked />
+                  <i class="fas fa-th"></i> Сетка координат</label
+                >
+                <label class="check-item"
+                  ><input type="checkbox" id="toggleCoordinatesCheck" checked />
+                  <i class="fas fa-map-marker-alt"></i> Координаты</label
+                >
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">ИНФОРМАЦИЯ О СЛОЕ</div>
+            <div class="info">
+              <div class="info-grid">
+                <div class="info-label">Имя:</div>
+                <div class="info-value" id="layerName">—</div>
+                <div class="info-label">Размер:</div>
+                <div class="info-value" id="layerSize">—</div>
+                <div class="info-label">Проекция:</div>
+                <div class="info-value">EPSG:3031</div>
+                <div class="info-label">Разрешение:</div>
+                <div class="info-value" id="layerResolution">—</div>
+                <div class="info-label">Тип:</div>
+                <div class="info-value">GeoTIFF (8 bit)</div>
+                <div class="info-label">Размер файла:</div>
+                <div class="info-value" id="layerFileSize">—</div>
+                <div class="info-label">Дата:</div>
+                <div class="info-value" id="layerDate">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="fileModal" class="modal">
+      <div class="modal-content">
+        <span class="close" id="closeFileModal">&times;</span>
+        <h2><i class="fas fa-upload"></i> Добавить в библиотеку</h2>
+        <input
+          type="file"
+          id="modalFileInput"
+          multiple
+          accept=".tif,.tiff,.jpg,.jpeg,.png,.srf"
+        />
+        <select id="modalCategorySelect">
+          <option value="antarctic">Antarctic Maps</option>
+          <option value="srf">SRF Images</option>
+        </select>
+        <button id="modalUploadBtn" class="btn-primary">Загрузить</button>
+      </div>
+    </div>
+
+    <div id="gcpsModal" class="modal">
+      <div class="modal-content">
+        <span class="close" id="closeGcpsModal">&times;</span>
+        <h2><i class="fas fa-map-marker-alt"></i> Настройка GCP</h2>
+        <p>Редактируйте контрольные точки в формате JSON:</p>
+        <textarea
+          id="gcpsInput"
+          rows="12"
+          style="font-family: monospace; font-size: 11px"
+        ></textarea>
+        <button id="saveGcpsBtn" class="btn-primary">
+          Сохранить и обработать
+        </button>
+        <button id="batchGcpBtn" class="btn-secondary">
+          <i class="fas fa-upload"></i> Загрузить CSV с GCP
+        </button>
+      </div>
+    </div>
+
+    <div id="coordsModal" class="modal">
+      <div class="modal-content">
+        <span class="close" id="closeCoordsModal">&times;</span>
+        <h2><i class="fas fa-map-marked-alt"></i> Загрузка координат</h2>
+        <p>CSV формат: Latitude,Longitude,Name,Description</p>
+        <pre
+          style="
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 10px;
+          "
+        >
+Latitude,Longitude,Name,Description
+-90,0,South Pole,Geographic South Pole
+-82.86,135,Bunger Hills,Antarctic oasis</pre
+        >
+        <input type="file" id="coordsFileInput" accept=".csv" />
+        <button id="uploadCoordsConfirmBtn" class="btn-primary">
+          Загрузить
+        </button>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/proj4leaflet@1.0.2/src/proj4leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+    />
+    <script src="map.js"></script>
+  </body>
+</html>
