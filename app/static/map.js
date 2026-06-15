@@ -194,13 +194,11 @@
         const layersDiv = layersPanel.querySelector('.layers');
         if (!layersDiv) return;
 
-        // Remove old coordinates checkbox if exists
         const coordsCheckItem = layersDiv.querySelector('.check-item input#toggleCoordinatesCheck')?.closest('.check-item');
         if (coordsCheckItem) {
             coordsCheckItem.style.display = 'none';
         }
 
-        // Create timeline button
         timelineToggleBtn = document.createElement('button');
         timelineToggleBtn.id = 'timelineToggleBtn';
         timelineToggleBtn.className = 'timeline-btn';
@@ -300,7 +298,6 @@
                 margin-bottom: 16px;
                 overflow: hidden;
             }
-            
             .timeline-header {
                 display: flex;
                 justify-content: space-between;
@@ -309,18 +306,15 @@
                 border-bottom: 1px solid rgba(255, 255, 255, 0.1);
                 background: rgba(0, 0, 0, 0.3);
             }
-            
             .timeline-header h4 {
                 margin: 0;
                 font-size: 14px;
                 color: #b9d5ff;
             }
-            
             .timeline-header h4 i {
                 margin-right: 8px;
                 color: #2d7eff;
             }
-            
             .timeline-close {
                 background: none;
                 border: none;
@@ -331,16 +325,13 @@
                 border-radius: 6px;
                 transition: all 0.2s;
             }
-            
             .timeline-close:hover {
                 background: rgba(255, 255, 255, 0.1);
                 color: white;
             }
-            
             .timeline-controls {
                 padding: 16px 18px;
             }
-            
             .date-range-info {
                 text-align: center;
                 font-size: 11px;
@@ -350,11 +341,9 @@
                 background: rgba(0, 0, 0, 0.2);
                 border-radius: 8px;
             }
-            
             .timeline-slider-container {
                 margin: 15px 0;
             }
-            
             .timeline-slider {
                 width: 100%;
                 height: 6px;
@@ -363,7 +352,6 @@
                 border-radius: 3px;
                 outline: none;
             }
-            
             .timeline-slider::-webkit-slider-thumb {
                 -webkit-appearance: none;
                 width: 18px;
@@ -374,14 +362,12 @@
                 box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
                 border: 2px solid #2d7eff;
             }
-            
             .timeline-buttons {
                 display: flex;
                 justify-content: center;
                 gap: 15px;
                 margin: 15px 0;
             }
-            
             .timeline-btn {
                 background: rgba(45, 126, 255, 0.2);
                 border: 1px solid rgba(45, 126, 255, 0.4);
@@ -392,23 +378,19 @@
                 transition: all 0.2s;
                 font-size: 14px;
             }
-            
             .timeline-btn:hover {
                 background: rgba(45, 126, 255, 0.4);
                 transform: translateY(-1px);
             }
-            
             .timeline-btn.play-btn {
                 background: #2d7eff;
                 border-color: #2d7eff;
                 padding: 8px 30px;
             }
-            
             .timeline-btn.play-btn.playing {
                 background: #ff4d5a;
                 border-color: #ff4d5a;
             }
-            
             .timeline-speed-control {
                 display: flex;
                 align-items: center;
@@ -417,20 +399,17 @@
                 font-size: 12px;
                 color: #9cb5d8;
             }
-            
             .timeline-speed-control input {
                 flex: 1;
                 height: 4px;
                 background: rgba(255, 255, 255, 0.2);
                 border-radius: 2px;
             }
-            
             .timeline-speed-control input::-webkit-slider-thumb {
                 width: 14px;
                 height: 14px;
                 background: #ffbe2f;
             }
-            
             .current-date-display {
                 text-align: center;
                 font-size: 16px;
@@ -441,7 +420,6 @@
                 background: rgba(0, 0, 0, 0.3);
                 border-radius: 10px;
             }
-            
             .timeline-stats {
                 display: flex;
                 justify-content: space-between;
@@ -451,23 +429,16 @@
                 font-size: 11px;
                 color: #9cb5d8;
             }
-            
             .timeline-stats span {
                 display: flex;
                 align-items: center;
                 gap: 6px;
             }
-            
-            .timeline-stats i {
-                font-size: 12px;
-            }
-            
             @keyframes markerPulse {
                 0% { transform: scale(1); opacity: 1; }
                 50% { transform: scale(1.2); opacity: 0.8; }
                 100% { transform: scale(1); opacity: 1; }
             }
-            
             .timeline-marker {
                 animation: markerPulse 0.3s ease;
             }
@@ -524,7 +495,6 @@
                 timelineSpeed = parseInt(e.target.value);
                 const speedX = (1000 / timelineSpeed).toFixed(1);
                 if (speedValue) speedValue.textContent = `${speedX}x`;
-
                 if (timelinePlaying) {
                     stopTimelineAnimation();
                     startTimelineAnimation();
@@ -544,10 +514,7 @@
 
     function updateSliderAndDisplay() {
         const slider = document.getElementById('timelineDateSlider');
-        if (slider) {
-            slider.value = currentDateIndex;
-        }
-
+        if (slider) slider.value = currentDateIndex;
         const dateDisplay = document.getElementById('timelineCurrentDate');
         if (dateDisplay && sortedDates[currentDateIndex]) {
             const dateStr = sortedDates[currentDateIndex];
@@ -558,107 +525,83 @@
 
     function parseEarthquakeDateTime(dateStr, timeStr) {
         if (!dateStr) return null;
-
         let date = null;
-
         if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
             date = new Date(dateStr);
-        }
-        else if (dateStr.match(/\d{2}\/\d{2}\/\d{4}/)) {
+        } else if (dateStr.match(/\d{2}\/\d{2}\/\d{4}/)) {
             const parts = dateStr.split('/');
             if (parts.length === 3) {
                 date = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
             }
-        }
-        else if (dateStr.match(/\d{2}\.\d{2}\.\d{4}/)) {
+        } else if (dateStr.match(/\d{2}\.\d{2}\.\d{4}/)) {
             const parts = dateStr.split('.');
             if (parts.length === 3) {
                 date = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
             }
-        }
-        else {
+        } else {
             date = new Date(dateStr);
         }
-
         if (isNaN(date.getTime())) return null;
-
         if (timeStr && timeStr.trim()) {
             const timeParts = timeStr.match(/(\d{2}):(\d{2}):(\d{2})/);
             if (timeParts) {
                 date.setHours(parseInt(timeParts[1]), parseInt(timeParts[2]), parseInt(timeParts[3]));
             }
         }
-
         return date;
     }
 
     function groupCoordinatesByDate(coords) {
         const grouped = {};
-
         coords.forEach(coord => {
             let dateKey = null;
-
             if (coord.dateTime) {
                 const date = new Date(coord.dateTime);
                 if (!isNaN(date.getTime())) {
                     dateKey = date.toISOString().split('T')[0];
                 }
-            }
-            else if (coord.date) {
+            } else if (coord.date) {
                 const date = new Date(coord.date);
                 if (!isNaN(date.getTime())) {
                     dateKey = date.toISOString().split('T')[0];
                 }
-            }
-            else if (coord.dateStr && coord.timeStr) {
+            } else if (coord.dateStr && coord.timeStr) {
                 const date = parseEarthquakeDateTime(coord.dateStr, coord.timeStr);
                 if (date) {
                     dateKey = date.toISOString().split('T')[0];
                 }
             }
-
             if (dateKey) {
-                if (!grouped[dateKey]) {
-                    grouped[dateKey] = [];
-                }
+                if (!grouped[dateKey]) grouped[dateKey] = [];
                 grouped[dateKey].push(coord);
             }
         });
-
         return grouped;
     }
 
     function prepareTimelineData(coords) {
         if (!coords || !coords.length) return false;
-
         allCoordinatesByDate = groupCoordinatesByDate(coords);
         sortedDates = Object.keys(allCoordinatesByDate).sort();
-
         if (sortedDates.length === 0) return false;
-
         const dateRangeSpan = document.getElementById('timelineDateRange');
         if (dateRangeSpan && sortedDates.length) {
             dateRangeSpan.textContent = `${sortedDates[0]} — ${sortedDates[sortedDates.length - 1]}`;
         }
-
         const totalMarkersSpan = document.getElementById('timelineTotalMarkers');
         if (totalMarkersSpan) {
             const total = Object.values(allCoordinatesByDate).reduce((sum, arr) => sum + arr.length, 0);
             totalMarkersSpan.textContent = total;
         }
-
         const totalDaysSpan = document.getElementById('timelineTotalDays');
         if (totalDaysSpan) totalDaysSpan.textContent = sortedDates.length;
-
         const slider = document.getElementById('timelineDateSlider');
         if (slider) {
             slider.max = sortedDates.length - 1;
             slider.value = 0;
         }
-
         currentDateIndex = 0;
         showMarkersForDate(0);
-
         return true;
     }
 
@@ -667,25 +610,18 @@
             map.removeLayer(timelineMarkersLayer);
             timelineMarkersLayer = null;
         }
-
         if (dateIndex >= sortedDates.length) return;
-
         const dateStr = sortedDates[dateIndex];
         const markersForDate = allCoordinatesByDate[dateStr] || [];
-
         if (markersForDate.length === 0) return;
-
         const dateDisplay = document.getElementById('timelineCurrentDate');
         if (dateDisplay) {
             dateDisplay.innerHTML = `<i class="fas fa-calendar-day"></i> ${dateStr} <span style="font-size:12px;color:#ffbe2f;">(${markersForDate.length} событий)</span>`;
         }
-
         const slider = document.getElementById('timelineDateSlider');
         if (slider) slider.value = dateIndex;
-
         const markers = [];
-
-        markersForDate.forEach((coord, idx) => {
+        markersForDate.forEach((coord) => {
             let color = '#ff4d5a';
             if (coord.magnitude) {
                 if (coord.magnitude >= 6) color = '#ff0000';
@@ -693,34 +629,24 @@
                 else if (coord.magnitude >= 4) color = '#ffaa00';
                 else color = '#ffcc44';
             }
-
             const customIcon = L.divIcon({
                 html: `<div style="position:relative;">
                             <i class="fas fa-map-marker-alt" style="color:${color};font-size:24px;text-shadow:0 0 5px rgba(0,0,0,0.5);"></i>
                             <div style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);background:${color};color:white;padding:2px 6px;border-radius:10px;font-size:9px;white-space:nowrap;font-weight:bold;box-shadow:0 1px 3px rgba(0,0,0,0.3);">
-                                ${escapeHtml(coord.name || coord.timeStr || formatDateToTime(coord.dateTime) || dateStr)}
+                                ${escapeHtml(coord.name || coord.timeStr || dateStr)}
                             </div>
                         </div>`,
                 iconSize: [24, 24],
                 className: 'timeline-marker',
                 popupAnchor: [0, -15]
             });
-
             const marker = L.marker([coord.lat, coord.lon], { icon: customIcon });
-
             let timeDisplay = '';
             if (coord.timeStr) {
                 timeDisplay = `<div style="font-size:12px; color:#aaa;"><i class="fas fa-clock"></i> Время: ${escapeHtml(coord.timeStr)}</div>`;
-            } else if (coord.dateTime) {
-                const dt = new Date(coord.dateTime);
-                if (!isNaN(dt.getTime())) {
-                    timeDisplay = `<div style="font-size:12px; color:#aaa;"><i class="fas fa-clock"></i> Время: ${dt.toLocaleTimeString()}</div>`;
-                }
             }
-
             const magnitudeDisplay = coord.magnitude ?
                 `<div style="font-size:12px; color:#ffaa00;"><i class="fas fa-chart-line"></i> Магнитуда: ${coord.magnitude}</div>` : '';
-
             const popupContent = `
                 <div style="min-width:200px; max-width:280px;">
                     <div style="border-bottom:1px solid #eee; margin-bottom:8px; padding-bottom:5px;">
@@ -740,10 +666,8 @@
             marker.bindPopup(popupContent);
             markers.push(marker);
         });
-
         timelineMarkersLayer = L.layerGroup(markers);
         timelineMarkersLayer.addTo(map);
-
         const eventsCountSpan = document.getElementById('timelineEventsCount');
         if (eventsCountSpan) {
             eventsCountSpan.textContent = `📌 ${markersForDate.length} событий`;
@@ -768,27 +692,21 @@
     function startTimelineAnimation() {
         if (timelinePlaying) return;
         if (!sortedDates.length) return;
-
         timelinePlaying = true;
-
         const playPauseBtn = document.getElementById('timelinePlayPause');
         if (playPauseBtn) {
             playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
             playPauseBtn.classList.add('playing');
         }
-
         function animate() {
             if (!timelinePlaying) return;
-
             if (currentDateIndex >= sortedDates.length) {
                 stopTimelineAnimation();
                 showToast('Хронология завершена 🎉', 'success');
                 return;
             }
-
             showMarkersForDate(currentDateIndex);
             currentDateIndex++;
-
             if (currentDateIndex < sortedDates.length) {
                 animationFrameId = setTimeout(animate, timelineSpeed);
             } else {
@@ -796,7 +714,6 @@
                 showToast('Хронология завершена 🎉', 'success');
             }
         }
-
         animate();
     }
 
@@ -806,7 +723,6 @@
             animationFrameId = null;
         }
         timelinePlaying = false;
-
         const playPauseBtn = document.getElementById('timelinePlayPause');
         if (playPauseBtn) {
             playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
@@ -816,7 +732,6 @@
 
     function stopTimeline() {
         stopTimelineAnimation();
-
         if (timelineMarkersLayer) {
             map.removeLayer(timelineMarkersLayer);
             timelineMarkersLayer = null;
@@ -840,13 +755,11 @@
                 showToast('Нет данных для отображения. Загрузите CSV файл с землетрясениями.', 'info');
                 return;
             }
-
             createTimelinePanel();
             timelinePanel = document.getElementById('timelinePanel');
             if (timelinePanel) timelinePanel.style.display = 'block';
             if (timelineToggleBtn) timelineToggleBtn.classList.add('active');
             timelineActive = true;
-
             if (!sortedDates.length && coordinates.length) {
                 prepareTimelineData(coordinates);
             } else if (sortedDates.length) {
@@ -855,56 +768,123 @@
         }
     }
 
-    // ========== COORDINATES/EARTHQUAKES DATA MANAGEMENT ==========
-    // Замените функцию loadCoordinatesData на эту:
+    // ========== TILES PREVIEW ==========
+    async function updateTilesPreview(mapId) {
+        const tilesGrid = document.getElementById('tilesPreview');
+        if (!tilesGrid) return;
 
+        tilesGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px"><div class="loading-spinner"></div> Загрузка превью...</div>';
+
+        try {
+            const zoom = 4;
+            const tilesPerSide = Math.pow(2, zoom);
+            const centerX = Math.floor(tilesPerSide / 2);
+            const centerY = Math.floor(tilesPerSide / 2);
+            const sampleTiles = [];
+            for (let dx = -1; dx <= 2; dx++) {
+                for (let dy = -1; dy <= 2; dy++) {
+                    const x = centerX + dx;
+                    const y = centerY + dy;
+                    if (x >= 0 && x < tilesPerSide && y >= 0 && y < tilesPerSide) {
+                        sampleTiles.push({ x, y });
+                    }
+                }
+            }
+
+            tilesGrid.innerHTML = '';
+            tilesGrid.style.display = 'grid';
+            tilesGrid.style.gridTemplateColumns = 'repeat(4, 1fr)';
+            tilesGrid.style.gap = '8px';
+
+            for (const tile of sampleTiles) {
+                const tileUrl = `/tiles/${encodeURIComponent(mapId)}/${zoom}/${tile.x}/${tile.y}.png?t=${Date.now()}`;
+                const tileDiv = document.createElement('div');
+                tileDiv.className = 'tile';
+                tileDiv.style.width = '100%';
+                tileDiv.style.height = '70px';
+                tileDiv.style.borderRadius = '8px';
+                tileDiv.style.overflow = 'hidden';
+                tileDiv.style.border = '1px solid rgba(255, 255, 255, 0.15)';
+                tileDiv.style.background = 'linear-gradient(135deg, #0f2d4f, #0a1e38)';
+                tileDiv.style.display = 'flex';
+                tileDiv.style.alignItems = 'center';
+                tileDiv.style.justifyContent = 'center';
+                tileDiv.style.fontSize = '24px';
+                tileDiv.innerHTML = '🗺️';
+
+                const img = new Image();
+                img.onload = () => {
+                    tileDiv.style.backgroundImage = `url('${tileUrl}')`;
+                    tileDiv.style.backgroundSize = 'cover';
+                    tileDiv.style.backgroundPosition = 'center';
+                    tileDiv.innerHTML = '';
+                    const checkmark = document.createElement('div');
+                    checkmark.innerHTML = '✓';
+                    checkmark.style.position = 'absolute';
+                    checkmark.style.bottom = '4px';
+                    checkmark.style.right = '6px';
+                    checkmark.style.color = '#21d07a';
+                    checkmark.style.fontSize = '10px';
+                    checkmark.style.background = 'rgba(0,0,0,0.5)';
+                    checkmark.style.padding = '2px 4px';
+                    checkmark.style.borderRadius = '4px';
+                    tileDiv.appendChild(checkmark);
+                };
+                img.src = tileUrl;
+                tilesGrid.appendChild(tileDiv);
+            }
+        } catch (error) {
+            console.error('Failed to load tiles preview:', error);
+            tilesGrid.innerHTML = '';
+            for (let i = 0; i < 8; i++) {
+                const tileDiv = document.createElement('div');
+                tileDiv.className = 'tile';
+                tileDiv.style.width = '100%';
+                tileDiv.style.height = '70px';
+                tileDiv.style.borderRadius = '8px';
+                tileDiv.style.border = '1px solid rgba(255, 255, 255, 0.15)';
+                tileDiv.style.background = 'linear-gradient(135deg, #0f2d4f, #0a1e38)';
+                tileDiv.style.display = 'flex';
+                tileDiv.style.alignItems = 'center';
+                tileDiv.style.justifyContent = 'center';
+                tileDiv.style.fontSize = '24px';
+                tileDiv.innerHTML = '🗺️';
+                tilesGrid.appendChild(tileDiv);
+            }
+        }
+    }
+
+    // ========== COORDINATES/EARTHQUAKES DATA MANAGEMENT ==========
     async function loadCoordinatesData() {
         try {
             let allEarthquakes = [];
             let page = 1;
             let hasMore = true;
 
-            // First, get total count
             const firstResponse = await fetch('/api/earthquakes?page=1&per_page=1');
-            if (!firstResponse.ok) {
-                throw new Error(`HTTP ${firstResponse.status}`);
-            }
+            if (!firstResponse.ok) throw new Error(`HTTP ${firstResponse.status}`);
             const firstData = await firstResponse.json();
             const total = firstData.total || 0;
-
             console.log(`Total earthquakes available: ${total}`);
-
             if (total === 0) {
                 coordinates = [];
                 return [];
             }
 
-            // Load in chunks
             const chunkSize = 5000;
             const totalPages = Math.ceil(total / chunkSize);
-
             for (page = 1; page <= totalPages; page++) {
                 console.log(`Loading page ${page}/${totalPages}...`);
-
                 const response = await fetch(`/api/earthquakes?page=${page}&per_page=${chunkSize}`);
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
                 const earthquakes = data.earthquakes || [];
                 allEarthquakes = allEarthquakes.concat(earthquakes);
-
                 console.log(`Loaded ${allEarthquakes.length}/${total} earthquakes`);
-
-                // Small delay to avoid overwhelming the browser
                 await new Promise(resolve => setTimeout(resolve, 100));
             }
 
             console.log(`Total loaded: ${allEarthquakes.length} earthquakes from API`);
-
-            // Parse the earthquake data
             coordinates = allEarthquakes.map(eq => ({
                 lat: parseFloat(eq.lat),
                 lon: parseFloat(eq.lon),
@@ -917,31 +897,18 @@
                 depth: eq.depth,
                 original: eq
             }));
-
             allCoordinates = [...coordinates];
             console.log(`Processed ${coordinates.length} earthquakes with dates`);
-
-            // Reset timeline data
             allCoordinatesByDate = {};
             sortedDates = [];
             currentDateIndex = 0;
-
-            // Prepare timeline if we have data
             if (coordinates.length > 0) {
                 const timelineReady = prepareTimelineData(coordinates);
-                if (timelineReady) {
-                    console.log(`Timeline prepared with ${sortedDates.length} unique dates`);
-                }
+                if (timelineReady) console.log(`Timeline prepared with ${sortedDates.length} unique dates`);
             }
-
-            // Update UI
             const totalCoordsSpan = document.getElementById('totalCoordsCount');
-            if (totalCoordsSpan) {
-                totalCoordsSpan.textContent = coordinates.length;
-            }
-
+            if (totalCoordsSpan) totalCoordsSpan.textContent = coordinates.length;
             renderCoordinatesTable();
-
             return coordinates;
         } catch (error) {
             console.error('Failed to load earthquakes:', error);
@@ -953,100 +920,12 @@
             return [];
         }
     }
-    // Добавьте эту функцию в map.js для обновления предпросмотра тайлов
 
-    async function updateTilesPreview(mapId) {
-        const tilesGrid = document.getElementById('tilesPreview');
-        if (!tilesGrid) return;
-
-        // Show loading state
-        tilesGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px"><div class="loading-spinner"></div> Загрузка превью...</div>';
-
-        try {
-            // Get tile info for zoom level 6 (preview)
-            const zoom = 6;
-            const tilesPerSide = Math.pow(2, zoom);
-
-            // Get a few sample tiles
-            const sampleTiles = [];
-            const centerX = Math.floor(tilesPerSide / 2);
-            const centerY = Math.floor(tilesPerSide / 2);
-
-            // Get 4x4 grid around center
-            for (let dx = -2; dx <= 1; dx++) {
-                for (let dy = -2; dy <= 1; dy++) {
-                    const x = centerX + dx;
-                    const y = centerY + dy;
-                    if (x >= 0 && x < tilesPerSide && y >= 0 && y < tilesPerSide) {
-                        sampleTiles.push({ x, y });
-                    }
-                }
-            }
-
-            // Clear grid
-            tilesGrid.innerHTML = '';
-            tilesGrid.style.gridTemplateColumns = 'repeat(4, 1fr)';
-
-            // Load preview tiles
-            for (const tile of sampleTiles) {
-                const tileUrl = `/tiles/${encodeURIComponent(mapId)}/${zoom}/${tile.x}/${tile.y}.png?t=${Date.now()}`;
-                const tileDiv = document.createElement('div');
-                tileDiv.className = 'tile';
-                tileDiv.style.backgroundImage = `url('${tileUrl}')`;
-                tileDiv.style.backgroundSize = 'cover';
-                tileDiv.style.backgroundPosition = 'center';
-                tileDiv.innerHTML = '';
-                tilesGrid.appendChild(tileDiv);
-            }
-
-            // Update total tiles count
-            const totalTilesSpan = document.getElementById('totalTilesDisplay');
-            if (totalTilesSpan && currentMapInfo?.tile_stats?.total_tiles) {
-                totalTilesSpan.textContent = formatNumber(currentMapInfo.tile_stats.total_tiles);
-            }
-
-        } catch (error) {
-            console.error('Failed to load tiles preview:', error);
-            tilesGrid.innerHTML = Array(8).fill(0).map(() => '<div class="tile">🗺️</div>').join('');
-        }
-    }
-
-    // Вызывайте эту функцию после загрузки карты
-    // Например, в loadBaseMapTiles добавьте в конце:
-    async function loadBaseMapTiles(mapId, mapInfo = null) {
-        if (baseTileLayer) map.removeLayer(baseTileLayer);
-
-        const tileUrl = `/tiles/${encodeURIComponent(mapId)}/{z}/{x}/{y}.png?t=${Date.now()}`;
-        baseTileLayer = L.tileLayer(tileUrl, {
-            minZoom: 2, maxZoom: 8,
-            opacity: document.getElementById('baseOpacity')?.value / 100 || 1
-        }).addTo(map);
-
-        currentMapInfo = mapInfo;
-
-        if (mapInfo) {
-            document.getElementById('layerName').textContent = mapInfo.name || 'antarctica_map_georef.tif';
-            document.getElementById('layerSize').textContent = mapInfo.width ? `${formatNumber(mapInfo.width)} × ${formatNumber(mapInfo.height)} px` : '23623 × 23623 px';
-            document.getElementById('layerFileSize').textContent = mapInfo.size ? `${(mapInfo.size / 1024 / 1024).toFixed(1)} MB` : '312.4 MB';
-            document.getElementById('layerDate').textContent = mapInfo.modified?.split('T')[0] || '25.05.2024';
-            if (mapInfo.tile_stats?.total_tiles) {
-                document.getElementById('totalTilesDisplay').textContent = formatNumber(mapInfo.tile_stats.total_tiles);
-            }
-
-            // Update tiles preview
-            await updateTilesPreview(mapId);
-        }
-
-        map.setZoom(4);
-        showToast(`Базовая карта: ${mapInfo?.name || mapId}`, 'success');
-    }
     async function loadEarthquakeStats() {
         try {
             const response = await fetch('/api/earthquakes/stats');
             if (!response.ok) return;
-
             const stats = await response.json();
-
             if (stats.total > 0) {
                 const statsHtml = `
                     <div style="font-size: 10px; margin-top: 10px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 6px;">
@@ -1055,11 +934,8 @@
                         ${stats.date_range ? `<div>📅 Период: ${stats.date_range.min} — ${stats.date_range.max}</div>` : ''}
                     </div>
                 `;
-
                 const statsContainer = document.getElementById('timelineStats');
-                if (statsContainer) {
-                    statsContainer.innerHTML = statsHtml;
-                }
+                if (statsContainer) statsContainer.innerHTML = statsHtml;
             }
         } catch (error) {
             console.error('Failed to load stats:', error);
@@ -1082,15 +958,12 @@
     function renderCoordinatesTable() {
         const tbody = document.getElementById('coordinatesTableBody');
         if (!tbody) return;
-
         const filtered = filterCoordinates();
-
         if (filtered.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Нет данных. Загрузите CSV с землетрясениями. Формат: Latitude,Longitude,Date,Time</td></tr>';
             document.getElementById('totalCoordsCount').textContent = '0';
             return;
         }
-
         tbody.innerHTML = filtered.map((coord, idx) => `
             <tr onclick="window.flyToLocation(${coord.lat}, ${coord.lon})" style="cursor: pointer;">
                 <td>${idx + 1}</td>
@@ -1101,19 +974,15 @@
                 <td>${escapeHtml(coord.timeStr || '—')}</td>
                 <td>${coord.magnitude ? coord.magnitude.toFixed(1) : '—'}</td>
                 <td><i class="fas fa-location-dot" style="color: #2d7eff;"></i></td>
-            </tr>
+              </tr>
         `).join('');
-
         document.getElementById('totalCoordsCount').textContent = filtered.length;
     }
 
     window.flyToLocation = function (lat, lon) {
         const mapTab = document.querySelector('.tab[data-tab="map"]');
         if (mapTab) mapTab.click();
-
-        setTimeout(() => {
-            map.flyTo([lat, lon], 6);
-        }, 100);
+        setTimeout(() => map.flyTo([lat, lon], 6), 100);
     };
 
     function refreshCoordinatesData() {
@@ -1128,7 +997,6 @@
                 renderCoordinatesTable();
             });
         }
-
         const exportBtn = document.getElementById('exportCoordsBtn');
         if (exportBtn) {
             exportBtn.addEventListener('click', () => {
@@ -1137,12 +1005,10 @@
                     showToast('Нет данных для экспорта', 'error');
                     return;
                 }
-
                 let csv = 'Latitude,Longitude,Date,Time,Magnitude,Name\n';
                 filtered.forEach(c => {
-                    csv += `${c.lat},${c.lon},"${c.dateStr || ''}","${c.timeStr || ''}",${c.magnitude || ''},"${escapeCsv(c.name || '')}"\n`;
+                    csv += `${c.lat},${c.lon},"${c.dateStr || ''}","${c.timeStr || ''}",${c.magnitude || ''},"${String(c.name || '').replace(/"/g, '""')}"\n`;
                 });
-
                 const blob = new Blob([csv], { type: 'text/csv' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -1153,12 +1019,6 @@
                 showToast('Экспорт завершен', 'success');
             });
         }
-
-        function escapeCsv(str) {
-            if (!str) return '';
-            return String(str).replace(/"/g, '""');
-        }
-
         const refreshBtn = document.getElementById('refreshCoordsBtn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', async () => {
@@ -1167,7 +1027,6 @@
                 showToast('Данные обновлены', 'success');
             });
         }
-
         const uploadBtn = document.getElementById('uploadCoordsBtn');
         if (uploadBtn) {
             uploadBtn.addEventListener('click', () => {
@@ -1181,16 +1040,7 @@
         const tileUrl = `/tiles/${encodeURIComponent(mapId)}/{z}/{x}/{y}.png?t=${Date.now()}`;
         const layer = L.tileLayer(tileUrl, { minZoom: 2, maxZoom: 8, opacity: 0.7 });
         const overlayId = nextOverlayId++;
-
-        overlayLayers.push({
-            id: overlayId,
-            mapId: mapId,
-            name: mapName,
-            layer: layer,
-            opacity: 0.7,
-            order: overlayLayers.length
-        });
-
+        overlayLayers.push({ id: overlayId, mapId: mapId, name: mapName, layer: layer, opacity: 0.7, order: overlayLayers.length });
         layer.addTo(map);
         renderOverlayLayersList();
         showToast(`Карта "${mapName}" добавлена как наложение`, 'success');
@@ -1219,12 +1069,10 @@
     function renderOverlayLayersList() {
         const container = document.getElementById('overlayLayersContainer');
         if (!container) return;
-
         if (overlayLayers.length === 0) {
             container.innerHTML = '<div style="text-align:center;padding:15px;color:#9cb5d8;font-size:12px">Нет наложенных карт. Нажмите "+" чтобы добавить</div>';
             return;
         }
-
         container.innerHTML = overlayLayers.map((overlay, idx) => `
             <div class="overlay-layer-item" data-id="${overlay.id}" style="margin-bottom:10px; padding:10px; background:rgba(255,255,255,0.05); border-radius:8px">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
@@ -1243,7 +1091,6 @@
                 </div>
             </div>
         `).join('');
-
         document.querySelectorAll('.remove-layer').forEach(btn => {
             btn.addEventListener('click', () => removeOverlayLayer(parseInt(btn.dataset.id)));
         });
@@ -1274,10 +1121,8 @@
         `;
         document.body.appendChild(modal);
         modal.style.display = 'block';
-
         const processedMaps = libraryMaps.filter(m => m.processed);
         const listContainer = document.getElementById('overlayMapList');
-
         if (processedMaps.length === 0) {
             listContainer.innerHTML = '<div style="padding:20px;text-align:center;color:#ffbe2f">Нет обработанных карт</div>';
         } else {
@@ -1307,23 +1152,19 @@
                 body: JSON.stringify({ grid: true, coastline: false })
             });
         } catch (e) { console.warn('Layer generation:', e); }
-
         gridLayer = L.tileLayer('/tiles/coordinate_grid/{z}/{x}/{y}.png', {
             minZoom: 2, maxZoom: 8, opacity: 0.7
         }).addTo(map);
     }
 
-    function loadBaseMapTiles(mapId, mapInfo = null) {
+    async function loadBaseMapTiles(mapId, mapInfo = null) {
         if (baseTileLayer) map.removeLayer(baseTileLayer);
-
         const tileUrl = `/tiles/${encodeURIComponent(mapId)}/{z}/{x}/{y}.png?t=${Date.now()}`;
         baseTileLayer = L.tileLayer(tileUrl, {
             minZoom: 2, maxZoom: 8,
             opacity: document.getElementById('baseOpacity')?.value / 100 || 1
         }).addTo(map);
-
         currentMapInfo = mapInfo;
-
         if (mapInfo) {
             document.getElementById('layerName').textContent = mapInfo.name || 'antarctica_map_georef.tif';
             document.getElementById('layerSize').textContent = mapInfo.width ? `${formatNumber(mapInfo.width)} × ${formatNumber(mapInfo.height)} px` : '23623 × 23623 px';
@@ -1332,8 +1173,8 @@
             if (mapInfo.tile_stats?.total_tiles) {
                 document.getElementById('totalTilesDisplay').textContent = formatNumber(mapInfo.tile_stats.total_tiles);
             }
+            await updateTilesPreview(mapId);
         }
-
         map.setZoom(4);
         showToast(`Базовая карта: ${mapInfo?.name || mapId}`, 'success');
     }
@@ -1355,15 +1196,12 @@
     function renderLibraryGrid() {
         const grid = document.getElementById('libraryGrid');
         if (!grid) return;
-
         const processedMaps = libraryMaps.filter(m => m.processed);
         const pendingMaps = libraryMaps.filter(m => !m.processed);
-
         if (libraryMaps.length === 0) {
             grid.innerHTML = '<div style="padding:20px;text-align:center;color:#9cb5d8">Нет карт. Нажмите "+" чтобы добавить</div>';
             return;
         }
-
         grid.innerHTML = `
             <div style="margin-bottom:10px;font-size:11px;color:#9cb5d8">
                 <i class="fas fa-check-circle" style="color:#21d07a"></i> Обработанные (${processedMaps.length}) | 
@@ -1397,15 +1235,13 @@
                 </div>
             `).join('')}
         `;
-
         document.querySelectorAll('.set-base').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', async () => {
                 const mapItem = libraryMaps.find(m => m.id === btn.dataset.id);
-                if (mapItem?.processed) loadBaseMapTiles(mapItem.id, mapItem);
+                if (mapItem?.processed) await loadBaseMapTiles(mapItem.id, mapItem);
                 else showToast('Карта не обработана', 'error');
             });
         });
-
         document.querySelectorAll('.add-overlay').forEach(btn => {
             btn.addEventListener('click', () => {
                 const mapItem = libraryMaps.find(m => m.id === btn.dataset.id);
@@ -1413,7 +1249,6 @@
                 else showToast('Карта не обработана', 'error');
             });
         });
-
         document.querySelectorAll('.process-map').forEach(btn => {
             btn.addEventListener('click', () => {
                 const mapItem = libraryMaps.find(m => m.id === btn.dataset.id);
@@ -1426,7 +1261,6 @@
         const total = libraryMaps.length;
         const processed = libraryMaps.filter(m => m.processed).length;
         const pending = total - processed;
-
         document.getElementById('totalMapsCount').textContent = total;
         document.getElementById('processedMapsCount').textContent = processed;
         document.getElementById('pendingMapsCount').textContent = pending;
@@ -1442,9 +1276,7 @@
             { pixel_x: 1000, pixel_y: 1000, longitude: -50, latitude: -85 },
             { pixel_x: 0, pixel_y: 1000, longitude: -60, latitude: -85 }
         ];
-
         document.getElementById('gcpsInput').value = JSON.stringify(currentGcps, null, 2);
-
         const modal = document.getElementById('gcpsModal');
         if (modal) {
             modal.style.display = 'block';
@@ -1456,7 +1288,6 @@
     function updateGcpsTable(gcps) {
         const tbody = document.getElementById('gcpsTableBody');
         if (!tbody) return;
-
         const colors = ['red', 'green', 'blue', 'yellow'];
         tbody.innerHTML = gcps.slice(0, 4).map((gcp, idx) => `
             <tr>
@@ -1464,9 +1295,8 @@
                 <td>(${Math.round(gcp.pixel_x)}, ${Math.round(gcp.pixel_y)})</td>
                 <td>(${gcp.longitude.toFixed(4)}°, ${gcp.latitude.toFixed(4)}°)</td>
                 <td>${(Math.random() * 2 + 2).toFixed(2)}</td>
-            </tr>
+              </tr>
         `).join('');
-
         document.getElementById('gcpsCount').textContent = gcps.length;
     }
 
@@ -1474,25 +1304,21 @@
         const modal = document.getElementById('gcpsModal');
         const processBtn = document.getElementById('saveGcpsBtn');
         const originalText = processBtn?.innerHTML;
-
         if (processBtn) {
             processBtn.disabled = true;
             processBtn.innerHTML = '<div class="loading-spinner"></div> Обработка...';
         }
-
         try {
             const response = await fetch(`/api/library/process/${mapId}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ gcps: gcps })
             });
-
             const result = await response.json();
             if (result.success) {
                 showToast(`Успешно!`, 'success');
                 await loadLibrary();
                 if (modal) modal.style.display = 'none';
-
                 const rmse = (Math.random() * 1.5 + 2.5).toFixed(2);
                 document.getElementById('rmseValue').textContent = rmse;
                 document.getElementById('maxErrorValue').textContent = (parseFloat(rmse) + 0.5).toFixed(2);
@@ -1558,7 +1384,6 @@
                 });
             }
         });
-
         document.getElementById('modalUploadBtn')?.addEventListener('click', async () => {
             const files = document.getElementById('modalFileInput').files;
             const category = document.getElementById('modalCategorySelect').value;
@@ -1570,7 +1395,6 @@
                 showToast('Выберите файлы', 'error');
             }
         });
-
         document.getElementById('saveGcpsBtn')?.addEventListener('click', () => {
             const modal = document.getElementById('gcpsModal');
             const mapId = modal?.dataset.mapId;
@@ -1588,12 +1412,10 @@
                 }
             }
         });
-
         document.getElementById('batchGcpBtn')?.addEventListener('click', () => {
             document.getElementById('gcpsModal').style.display = 'none';
             document.getElementById('coordsModal').style.display = 'block';
         });
-
         document.getElementById('uploadCoordsConfirmBtn')?.addEventListener('click', async () => {
             const file = document.getElementById('coordsFileInput').files[0];
             if (file) {
@@ -1602,15 +1424,12 @@
                 document.getElementById('coordsFileInput').value = '';
             }
         });
-
         document.getElementById('addMapBtn')?.addEventListener('click', () => {
             document.getElementById('fileModal').style.display = 'block';
         });
-
         document.getElementById('refreshLibraryBtn')?.addEventListener('click', () => {
             loadLibrary();
         });
-
         document.getElementById('batchProcessBtn')?.addEventListener('click', async () => {
             const unprocessed = libraryMaps.filter(m => !m.processed);
             if (unprocessed.length === 0) {
@@ -1618,7 +1437,6 @@
                 return;
             }
             if (!confirm(`Обработать ${unprocessed.length} карт?`)) return;
-
             try {
                 const response = await fetch('/api/library/batch-process', {
                     method: 'POST',
@@ -1634,7 +1452,6 @@
                 showToast('Ошибка пакетной обработки', 'error');
             }
         });
-
         document.getElementById('layersToggleBtn')?.addEventListener('click', () => {
             const rightbar = document.querySelector('.rightbar');
             if (rightbar) {
@@ -1651,12 +1468,9 @@
         await loadLibrary();
         await loadCoordinatesData();
         await loadEarthquakeStats();
-
         setupCoordinatesPanel();
         setupEventListeners();
-
         renderCoordinatesTable();
-
         showToast('Antarctic Mapper готов. Загрузите CSV с землетрясениями (Latitude, Longitude, Date, Time) для хронологии', 'success');
     }
 

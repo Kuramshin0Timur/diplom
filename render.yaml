@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: antarctic-mapper
+    runtime: python
+    repo: https://github.com/Kuramshin0Timur/diplom
+    branch: main
+    buildCommand: |
+      apt-get update
+      apt-get install -y gdal-bin libgdal-dev
+      pip install --upgrade pip
+      pip install -r requirements.txt
+    startCommand: gunicorn run:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.12
+      - key: GDAL_DISABLE_READDIR_ON_OPEN
+        value: EMPTY_DIR
+    healthCheckPath: /api/health
+    autoDeploy: true
