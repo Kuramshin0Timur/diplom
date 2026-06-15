@@ -77,7 +77,6 @@ def get_image_preview(file_path: Path, max_size=(200, 200)):
     try:
         ext = file_path.suffix.lower()
         
-        # SRF files - try to extract preview
         if ext in {'.srf', '.SRF'}:
             try:
                 with Image.open(file_path) as img:
@@ -91,7 +90,6 @@ def get_image_preview(file_path: Path, max_size=(200, 200)):
                 draw.text((max_size[0]//2, max_size[1]//2), "SRF\nFile", fill='white', anchor='mm', align='center')
                 return img
         
-        # Regular images
         with Image.open(file_path) as img:
             if img.mode not in ('RGB', 'RGBA'):
                 img = img.convert('RGB')
@@ -110,9 +108,12 @@ def get_image_preview(file_path: Path, max_size=(200, 200)):
         draw.text((max_size[0]//2, max_size[1]//2), "Preview\nError", fill='white', anchor='mm', align='center')
         return img
 
+
+# ========== HEALTH AND CONFIG ==========
 @api_bp.route('/health', methods=['GET'])
 def health_check():
     return jsonify({'status': 'healthy', 'service': 'antarctic-mapper'})
+
 
 @api_bp.route('/tile-bounds', methods=['GET'])
 def get_tile_bounds():
@@ -124,6 +125,8 @@ def get_tile_bounds():
         'tile_size': 256
     })
 
+
+# ========== LIBRARY MANAGEMENT ==========
 @api_bp.route('/library/maps', methods=['GET'])
 def get_library_maps():
     """Get all maps from library"""
@@ -133,7 +136,6 @@ def get_library_maps():
         maps = []
         seen_ids = set()
         
-        # Scan antarctic directory
         antarctic_dir = Config.LIBRARY_DIR / 'antarctic'
         if antarctic_dir.exists():
             for img_path in antarctic_dir.iterdir():
@@ -155,7 +157,6 @@ def get_library_maps():
                                 'gcps': []
                             })
         
-        # Scan srf directory
         srf_dir = Config.LIBRARY_DIR / 'srf'
         if srf_dir.exists():
             for img_path in srf_dir.iterdir():
@@ -177,7 +178,6 @@ def get_library_maps():
                                 'gcps': []
                             })
         
-        # Merge with metadata
         metadata_maps = {m.get('id'): m for m in metadata.get('maps', [])}
         for map_item in maps:
             if map_item['id'] in metadata_maps:
@@ -195,6 +195,7 @@ def get_library_maps():
     except Exception as e:
         logger.error(f"Failed to get library maps: {e}", exc_info=True)
         return jsonify({'error': str(e), 'maps': [], 'total': 0}), 500
+
 
 @api_bp.route('/library/add', methods=['POST'])
 def add_to_library():
@@ -216,7 +217,6 @@ def add_to_library():
         safe_name = secure_filename(Path(file.filename).stem)
         filename = safe_name + original_ext
         
-        # Determine target directory
         if category == 'srf' or original_ext in {'.srf', '.SRF'}:
             target_dir = Config.LIBRARY_DIR / 'srf'
         else:
@@ -225,14 +225,11 @@ def add_to_library():
         target_dir.mkdir(exist_ok=True)
         target_path = target_dir / filename
         
-        # Check if file exists
         if target_path.exists():
             return jsonify({'error': f'File {filename} already exists in library'}), 400
         
-        # Save file
         file.save(target_path)
         
-        # Check if SRF has georeferencing
         is_georeferenced = False
         if original_ext in {'.srf', '.SRF'}:
             try:
@@ -241,7 +238,6 @@ def add_to_library():
             except:
                 pass
         
-        # Update metadata
         metadata = load_library_metadata()
         
         map_exists = False
@@ -276,18 +272,17 @@ def add_to_library():
         logger.error(f"Failed to add to library: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
+
 @api_bp.route('/library/process/<map_id>', methods=['POST'])
 def process_library_map(map_id):
-    """Process a map from library by ID - handles SRF correctly"""
+    """Process a map from library by ID"""
     try:
         data = request.get_json() or {}
         gcps = data.get('gcps', [])
         
-        # Find the map file
         map_path = None
         is_srf = False
         
-        # Check antarctic directory
         antarctic_dir = Config.LIBRARY_DIR / 'antarctic'
         if antarctic_dir.exists():
             for ext in ['.tif', '.tiff', '.jpg', '.jpeg', '.png']:
@@ -296,7 +291,6 @@ def process_library_map(map_id):
                     map_path = test_path
                     break
         
-        # Check srf directory
         if not map_path:
             srf_dir = Config.LIBRARY_DIR / 'srf'
             if srf_dir.exists():
@@ -312,27 +306,22 @@ def process_library_map(map_id):
         
         logger.info(f"Processing library map: {map_path} (SRF: {is_srf})")
         
-        # Process based on file type
         if is_srf:
-            # Check if SRF has georeferencing
             try:
                 has_georef, georef_info = SRFProcessor.has_georeferencing(map_path)
             except:
                 has_georef = False
             
             if has_georef:
-                logger.info(f"Processing georeferenced SRF: {map_path}")
                 output_path = Config.OUTPUT_DIR / f"antarctic_{map_id}.tif"
                 result_path = SRFProcessor.process_srf(map_path, output_path)
                 
                 if not result_path or not result_path.exists():
                     return jsonify({'error': 'SRF processing failed'}), 500
                 
-                # Generate tiles with map_id
                 tile_stats = tiler.generate_tiles_from_vrt(result_path, map_id=map_id)
                 logger.info(f"Generated {tile_stats['total_tiles']} tiles for map {map_id}")
             else:
-                # SRF without georeferencing - use standard pipeline
                 logger.info("SRF has no georeferencing, using standard pipeline")
                 img_data = [{'path': map_path, 'gcps': gcps}]
                 processed = processor.process_batch(img_data)
@@ -343,7 +332,6 @@ def process_library_map(map_id):
                 source_for_tiles = processed[0]
                 tile_stats = tiler.generate_tiles_from_vrt(source_for_tiles, map_id=map_id)
         else:
-            # Standard processing for non-SRF files
             img_data = [{'path': map_path, 'gcps': gcps}]
             processed = processor.process_batch(img_data)
             
@@ -359,7 +347,6 @@ def process_library_map(map_id):
             
             tile_stats = tiler.generate_tiles_from_vrt(source_for_tiles, map_id=map_id)
         
-        # Update metadata
         metadata = load_library_metadata()
         found = False
         for item in metadata['maps']:
@@ -399,6 +386,7 @@ def process_library_map(map_id):
         logger.error(f"Failed to process library map: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
+
 @api_bp.route('/library/batch-process', methods=['POST'])
 def batch_process_library():
     """Batch process multiple maps from library"""
@@ -414,7 +402,6 @@ def batch_process_library():
         
         for map_id in map_ids:
             try:
-                # Find the map
                 map_path = None
                 is_srf = False
                 
@@ -434,7 +421,6 @@ def batch_process_library():
                     results.append({'map_id': map_id, 'success': False, 'error': 'Not found'})
                     continue
                 
-                # Process based on type
                 if is_srf:
                     try:
                         has_georef, _ = SRFProcessor.has_georeferencing(map_path)
@@ -467,7 +453,7 @@ def batch_process_library():
                         results.append({'map_id': map_id, 'success': True})
                     else:
                         results.append({'map_id': map_id, 'success': False, 'error': 'Processing failed'})
-                    
+                        
             except Exception as e:
                 results.append({'map_id': map_id, 'success': False, 'error': str(e)})
         
@@ -482,13 +468,13 @@ def batch_process_library():
         logger.error(f"Batch processing failed: {e}")
         return jsonify({'error': str(e)}), 500
 
+
 @api_bp.route('/library/delete/<map_id>', methods=['DELETE'])
 def delete_from_library(map_id):
     """Delete map from library"""
     try:
         deleted = False
         
-        # Delete from directories
         for category_dir in ['antarctic', 'srf']:
             dir_path = Config.LIBRARY_DIR / category_dir
             if dir_path.exists():
@@ -500,14 +486,12 @@ def delete_from_library(map_id):
                         logger.info(f"Deleted {file_path}")
                         break
         
-        # Delete tiles directory for this map
         tiles_dir = Config.TILES_DIR / map_id
         if tiles_dir.exists():
             import shutil
             shutil.rmtree(tiles_dir)
             logger.info(f"Deleted tiles for map {map_id}")
         
-        # Remove from metadata
         metadata = load_library_metadata()
         metadata['maps'] = [m for m in metadata['maps'] if m.get('id') != map_id]
         save_library_metadata(metadata)
@@ -518,14 +502,13 @@ def delete_from_library(map_id):
         logger.error(f"Failed to delete map: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
+
 @api_bp.route('/library/maps/<map_id>/thumbnail', methods=['GET'])
 def get_map_thumbnail(map_id):
     """Get thumbnail for a map"""
     try:
-        # Find the map file
         map_path = None
         
-        # Check directories
         for category_dir in ['antarctic', 'srf']:
             dir_path = Config.LIBRARY_DIR / category_dir
             if dir_path.exists():
@@ -538,7 +521,6 @@ def get_map_thumbnail(map_id):
                     break
         
         if not map_path:
-            # Return default placeholder
             img = Image.new('RGB', (200, 200), color='#2c3e50')
             draw = ImageDraw.Draw(img)
             draw.text((100, 100), "No\nPreview", fill='white', anchor='mm', align='center')
@@ -547,7 +529,6 @@ def get_map_thumbnail(map_id):
             img_io.seek(0)
             return send_file(img_io, mimetype='image/png')
         
-        # Process image
         with Image.open(map_path) as img:
             img.thumbnail((200, 200), Image.Resampling.LANCZOS)
             
@@ -575,36 +556,30 @@ def get_map_thumbnail(map_id):
         img_io.seek(0)
         return send_file(img_io, mimetype='image/png')
 
-@api_bp.route('/points', methods=['GET'])
-def get_points():
-    """Get all georeferenced points from processed images"""
-    points = []
-    
-    if Config.OUTPUT_DIR.exists():
-        for tif_path in Config.OUTPUT_DIR.glob('*.tif'):
-            try:
-                import rasterio
-                with rasterio.open(tif_path) as src:
-                    bounds = src.bounds
-                    points.append({
-                        'id': tif_path.stem,
-                        'name': tif_path.name,
-                        'bounds': {
-                            'minx': bounds.left,
-                            'miny': bounds.bottom,
-                            'maxx': bounds.right,
-                            'maxy': bounds.top
-                        },
-                        'center': {
-                            'x': (bounds.left + bounds.right) / 2,
-                            'y': (bounds.bottom + bounds.top) / 2
-                        }
-                    })
-            except Exception as e:
-                logger.error(f"Failed to read {tif_path}: {e}")
-    
-    return jsonify(points)
 
+@api_bp.route('/library/maps/<map_id>/info', methods=['GET'])
+def get_map_info(map_id):
+    """Get detailed information about a map"""
+    try:
+        metadata = load_library_metadata()
+        for map_item in metadata.get('maps', []):
+            if map_item.get('id') == map_id:
+                return jsonify({
+                    'id': map_item.get('id'),
+                    'name': map_item.get('name'),
+                    'processed': map_item.get('processed', False),
+                    'tile_stats': map_item.get('tile_stats', {}),
+                    'bounds': map_item.get('bounds', {}),
+                    'size': map_item.get('size', 0),
+                    'modified': map_item.get('modified', '')
+                })
+        return jsonify({'error': 'Map not found'}), 404
+    except Exception as e:
+        logger.error(f"Failed to get map info: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+# ========== IMAGE PROCESSING ==========
 @api_bp.route('/process', methods=['POST'])
 def process_images():
     """Process uploaded images with georeferencing"""
@@ -661,7 +636,6 @@ def process_images():
         logger.info("Generating tiles...")
         tile_stats = tiler.generate_tiles_from_vrt(source_for_tiles, map_id=map_id)
         
-        # Cleanup temp files
         for temp_file in Config.TEMP_DIR.glob('georef_*'):
             if temp_file.exists():
                 temp_file.unlink()
@@ -679,6 +653,8 @@ def process_images():
         logger.error(f"Processing failed: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
+
+# ========== GCP ENDPOINTS ==========
 @api_bp.route('/gcps/detect', methods=['POST'])
 def detect_gcps():
     """Auto-detect GCPs from image"""
@@ -708,12 +684,47 @@ def detect_gcps():
         logger.error(f"GCP detection failed: {e}")
         return jsonify({'error': str(e)}), 500
 
-@api_bp.route('/tiles/exists/<int:z>/<int:x>/<int:y>', methods=['GET'])
-def check_tile_exists(z, x, y):
-    """Check if tile exists (legacy)"""
-    return jsonify({'exists': False})
-# В api.py, замените функцию upload_earthquakes и get_earthquakes:
 
+@api_bp.route('/gcps/batch', methods=['POST'])
+def batch_gcps():
+    """Upload multiple GCPs via CSV"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        content = file.read().decode('utf-8')
+        lines = content.strip().split('\n')
+        
+        gcps = []
+        for line in lines[1:]:
+            if not line.strip():
+                continue
+            parts = line.split(',')
+            if len(parts) >= 4:
+                try:
+                    gcp = {
+                        'pixel_x': float(parts[0].strip()),
+                        'pixel_y': float(parts[1].strip()),
+                        'longitude': float(parts[2].strip()),
+                        'latitude': float(parts[3].strip())
+                    }
+                    gcps.append(gcp)
+                except ValueError:
+                    continue
+        
+        return jsonify({
+            'success': True,
+            'gcps': gcps,
+            'count': len(gcps)
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Batch GCP upload failed: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+# ========== EARTHQUAKES ENDPOINTS ==========
 @api_bp.route('/earthquakes/upload', methods=['POST'])
 def upload_earthquakes():
     """Upload and parse CSV file with earthquake data"""
@@ -728,20 +739,15 @@ def upload_earthquakes():
         if not file.filename.endswith('.csv'):
             return jsonify({'error': 'File must be CSV format'}), 400
         
-        # Read CSV content
         content = file.read().decode('utf-8')
         lines = content.strip().split('\n')
         
         if len(lines) < 2:
             return jsonify({'error': 'CSV file is empty'}), 400
         
-        # Parse header
         header = lines[0].split(',')
-        
-        # Normalize header
         normalized_header = [col.strip().lower().replace('"', '') for col in header]
         
-        # Find column indices
         lat_idx = None
         lon_idx = None
         date_idx = None
@@ -769,7 +775,6 @@ def upload_earthquakes():
         if lat_idx is None or lon_idx is None:
             return jsonify({'error': 'CSV must contain Latitude and Longitude columns'}), 400
         
-        # Parse data with better error handling
         earthquakes = []
         skipped = 0
         
@@ -777,7 +782,6 @@ def upload_earthquakes():
             if not line.strip():
                 continue
             
-            # Handle quoted fields properly
             parts = []
             current = ''
             in_quotes = False
@@ -793,8 +797,6 @@ def upload_earthquakes():
                 else:
                     current += char
             parts.append(current.strip())
-            
-            # Remove quotes from parts
             parts = [p.strip('"') for p in parts]
             
             if len(parts) <= max(lat_idx, lon_idx):
@@ -808,8 +810,7 @@ def upload_earthquakes():
                 lat = float(lat_str)
                 lon = float(lon_str)
                 
-                # Validate coordinates
-                if lat < -90 or lat > -60:  # Antarctic range
+                if lat < -90 or lat > -60:
                     lat = max(-90, min(lat, -60))
                 
                 if lon < -180 or lon > 180:
@@ -839,7 +840,6 @@ def upload_earthquakes():
                 skipped += 1
                 continue
         
-        # Save ALL earthquakes (no limit)
         earthquakes_file = Config.DATA_DIR / 'earthquakes.json'
         with open(earthquakes_file, 'w') as f:
             json.dump(earthquakes, f, indent=2)
@@ -869,45 +869,9 @@ def get_earthquakes():
         with open(earthquakes_file, 'r') as f:
             earthquakes = json.load(f)
         
-        # Get pagination parameters
         page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 5000, type=int)  # Increase to 5000 per request
+        per_page = request.args.get('per_page', 5000, type=int)
         
-        # Calculate pagination
-        total = len(earthquakes)
-        start = (page - 1) * per_page
-        end = start + per_page
-        
-        paginated = earthquakes[start:end]
-        
-        return jsonify({
-            'earthquakes': paginated,
-            'count': len(paginated),
-            'total': total,
-            'page': page,
-            'per_page': per_page,
-            'has_more': end < total
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Failed to get earthquakes: {e}")
-        return jsonify({'error': str(e)}), 500
-@api_bp.route('/earthquakes', methods=['GET'])
-def get_earthquakes():
-    """Get all earthquakes with pagination support"""
-    try:
-        earthquakes_file = Config.DATA_DIR / 'earthquakes.json'
-        if not earthquakes_file.exists():
-            return jsonify({'earthquakes': [], 'count': 0, 'total': 0}), 200
-        
-        with open(earthquakes_file, 'r') as f:
-            earthquakes = json.load(f)
-        
-        # Get pagination parameters
-        page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 1000, type=int)  # Limit to 1000 per request
-        
-        # Calculate pagination
         total = len(earthquakes)
         start = (page - 1) * per_page
         end = start + per_page
@@ -927,6 +891,7 @@ def get_earthquakes():
         logger.error(f"Failed to get earthquakes: {e}")
         return jsonify({'error': str(e)}), 500
 
+
 @api_bp.route('/earthquakes/stats', methods=['GET'])
 def get_earthquakes_stats():
     """Get statistics about earthquakes"""
@@ -940,7 +905,6 @@ def get_earthquakes_stats():
         
         total = len(earthquakes)
         
-        # Get date range if dates exist
         dates = [eq.get('date') for eq in earthquakes if eq.get('date')]
         date_range = None
         if dates:
@@ -949,7 +913,6 @@ def get_earthquakes_stats():
                 'max': max(dates)
             }
         
-        # Get magnitude range
         magnitudes = [eq.get('magnitude', 0) for eq in earthquakes if eq.get('magnitude')]
         mag_range = None
         if magnitudes:
@@ -969,6 +932,7 @@ def get_earthquakes_stats():
         logger.error(f"Failed to get stats: {e}")
         return jsonify({'error': str(e)}), 500
 
+
 @api_bp.route('/earthquakes/clear', methods=['DELETE'])
 def clear_earthquakes():
     """Clear all earthquakes data"""
@@ -981,6 +945,8 @@ def clear_earthquakes():
         logger.error(f"Failed to clear earthquakes: {e}")
         return jsonify({'error': str(e)}), 500
 
+
+# ========== LAYERS ENDPOINTS ==========
 @api_bp.route('/layers/generate', methods=['POST'])
 def generate_layers():
     """Generate auxiliary layers (grid, coastline)"""
@@ -1010,6 +976,7 @@ def generate_layers():
         logger.error(f"Failed to generate layers: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
+
 @api_bp.route('/layers/enable', methods=['POST'])
 def enable_layer():
     """Enable/disable layer"""
@@ -1017,7 +984,6 @@ def enable_layer():
     layer_name = data.get('layer')
     enabled = data.get('enabled', True)
     
-    # Save layer state
     layers_config = Config.DATA_DIR / 'layers_config.json'
     
     if layers_config.exists():
@@ -1033,6 +999,8 @@ def enable_layer():
     
     return jsonify({'success': True, 'layer': layer_name, 'enabled': enabled})
 
+
+# ========== COORDINATES ENDPOINTS ==========
 @api_bp.route('/coordinates/upload', methods=['POST'])
 def upload_coordinates():
     """Batch upload coordinates from CSV"""
@@ -1050,10 +1018,8 @@ def upload_coordinates():
         content = file.read().decode('utf-8')
         lines = content.strip().split('\n')
         
-        # Parse CSV
         header = lines[0].split(',')
         
-        # Determine columns
         lat_idx = None
         lon_idx = None
         name_idx = None
@@ -1073,7 +1039,6 @@ def upload_coordinates():
         if lat_idx is None or lon_idx is None:
             return jsonify({'error': 'CSV must contain Latitude and Longitude columns'}), 400
         
-        # Load coordinates
         coordinates = []
         for line in lines[1:]:
             if not line.strip():
@@ -1093,7 +1058,6 @@ def upload_coordinates():
             except ValueError:
                 continue
         
-        # Save
         coords_file = Config.DATA_DIR / 'coordinates.json'
         with open(coords_file, 'w') as f:
             json.dump(coordinates, f, indent=2)
@@ -1109,6 +1073,7 @@ def upload_coordinates():
         logger.error(f"Failed to upload coordinates: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
+
 @api_bp.route('/coordinates', methods=['GET'])
 def get_coordinates():
     """Get all uploaded coordinates"""
@@ -1123,44 +1088,44 @@ def get_coordinates():
         logger.error(f"Failed to get coordinates: {e}")
         return jsonify({'error': str(e)}), 500
 
-@api_bp.route('/gcps/batch', methods=['POST'])
-def batch_gcps():
-    """Upload multiple GCPs via CSV"""
-    try:
-        if 'file' not in request.files:
-            return jsonify({'error': 'No file provided'}), 400
-        
-        file = request.files['file']
-        content = file.read().decode('utf-8')
-        lines = content.strip().split('\n')
-        
-        # Expected format: pixel_x,pixel_y,longitude,latitude
-        gcps = []
-        for line in lines[1:]:  # Skip header
-            if not line.strip():
-                continue
-            parts = line.split(',')
-            if len(parts) >= 4:
-                try:
-                    gcp = {
-                        'pixel_x': float(parts[0].strip()),
-                        'pixel_y': float(parts[1].strip()),
-                        'longitude': float(parts[2].strip()),
-                        'latitude': float(parts[3].strip())
-                    }
-                    gcps.append(gcp)
-                except ValueError:
-                    continue
-        
-        return jsonify({
-            'success': True,
-            'gcps': gcps,
-            'count': len(gcps)
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Batch GCP upload failed: {e}")
-        return jsonify({'error': str(e)}), 500
+
+# ========== OTHER ENDPOINTS ==========
+@api_bp.route('/points', methods=['GET'])
+def get_points():
+    """Get all georeferenced points from processed images"""
+    points = []
+    
+    if Config.OUTPUT_DIR.exists():
+        for tif_path in Config.OUTPUT_DIR.glob('*.tif'):
+            try:
+                import rasterio
+                with rasterio.open(tif_path) as src:
+                    bounds = src.bounds
+                    points.append({
+                        'id': tif_path.stem,
+                        'name': tif_path.name,
+                        'bounds': {
+                            'minx': bounds.left,
+                            'miny': bounds.bottom,
+                            'maxx': bounds.right,
+                            'maxy': bounds.top
+                        },
+                        'center': {
+                            'x': (bounds.left + bounds.right) / 2,
+                            'y': (bounds.bottom + bounds.top) / 2
+                        }
+                    })
+            except Exception as e:
+                logger.error(f"Failed to read {tif_path}: {e}")
+    
+    return jsonify(points)
+
+
+@api_bp.route('/tiles/exists/<int:z>/<int:x>/<int:y>', methods=['GET'])
+def check_tile_exists(z, x, y):
+    """Check if tile exists (legacy)"""
+    return jsonify({'exists': False})
+
 
 @api_bp.route('/map/rmse/<map_id>', methods=['GET'])
 def get_rmse(map_id):
@@ -1181,25 +1146,4 @@ def get_rmse(map_id):
         
     except Exception as e:
         logger.error(f"Failed to get RMSE: {e}")
-        return jsonify({'error': str(e)}), 500
-
-@api_bp.route('/library/maps/<map_id>/info', methods=['GET'])
-def get_map_info(map_id):
-    """Get detailed information about a map"""
-    try:
-        metadata = load_library_metadata()
-        for map_item in metadata.get('maps', []):
-            if map_item.get('id') == map_id:
-                return jsonify({
-                    'id': map_item.get('id'),
-                    'name': map_item.get('name'),
-                    'processed': map_item.get('processed', False),
-                    'tile_stats': map_item.get('tile_stats', {}),
-                    'bounds': map_item.get('bounds', {}),
-                    'size': map_item.get('size', 0),
-                    'modified': map_item.get('modified', '')
-                })
-        return jsonify({'error': 'Map not found'}), 404
-    except Exception as e:
-        logger.error(f"Failed to get map info: {e}")
         return jsonify({'error': str(e)}), 500
